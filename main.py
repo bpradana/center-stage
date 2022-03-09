@@ -1,8 +1,10 @@
+import argparse
+import sys
+from statistics import mean
+
 import cv2
 import mediapipe as mp
-import sys
-import argparse
-from statistics import mean
+import numpy as np
 
 
 def detect_face(image, detector):
@@ -94,6 +96,11 @@ if __name__ == '__main__':
     target_x, target_y, target_z = width//2, height//2, 100
     padding = 25
     easing = 0.25
+    banner = cv2.imread('banner.png', 1)
+    banner_width, banner_height = banner.shape[1], banner.shape[0]
+    new_banner_width, new_banner_height = int(
+        output_height/banner_height*banner_width), int(output_height)
+    banner = cv2.resize(banner, (new_banner_width, new_banner_height))
 
     with mp_face_detection.FaceDetection(model_selection=1, min_detection_confidence=0.7) as detector:
         while cap.isOpened():
@@ -151,8 +158,12 @@ if __name__ == '__main__':
             cv2.putText(frame, 'Target: ({:.2f}, {:.2f}, {:.2f})'.format(
                 target_x, target_y, target_z), (10, 120), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
 
+            # Draw Banner
+            output_frame = cv2.flip(output_frame, 1)
+            output_frame = np.concatenate([output_frame, banner], axis=1)
+
             cv2.imshow('Debug Screen', frame)
-            cv2.imshow('Output', cv2.flip(output_frame, 1))
+            cv2.imshow('Output', output_frame)
             if cv2.waitKey(5) & 0xFF == 27:
                 cap.release()
                 break
