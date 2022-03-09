@@ -1,4 +1,5 @@
 # SPOTLIGHT SCENE
+![Demo GIF](demo.gif)
 
 ## Installing
 1. Install [Python](https://www.python.org/) 3.6 or later and PIP
