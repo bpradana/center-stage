@@ -2,6 +2,7 @@ import cv2
 import mediapipe as mp
 import sys
 import argparse
+from statistics import mean
 
 
 def detect_face(image, detector):
@@ -11,10 +12,13 @@ def detect_face(image, detector):
     if results.detections:
         bounding_boxes = [
             detection.location_data.relative_bounding_box for detection in results.detections]
+        average_confidence = mean([
+            float(detection.score[0]) for detection in results.detections])
     else:
         bounding_boxes = []
+        average_confidence = 0.0
 
-    return bounding_boxes
+    return bounding_boxes, average_confidence
 
 
 def draw_bounding_boxes(image, bounding_boxes, image_width, image_height):
@@ -75,6 +79,7 @@ if __name__ == '__main__':
     parser.add_argument('--camera', help='Index of camera to be used')
     parser.add_argument('--height', help='Height of video frame')
     parser.add_argument('--width', help='Width of video frame')
+    parser.add_argument('--output', help='Width of video frame')
     args = parser.parse_args(sys.argv[1:])
 
     mp_face_detection = mp.solutions.face_detection
@@ -83,7 +88,8 @@ if __name__ == '__main__':
 
     width, height = int(args.width) if args.width else 960, int(
         args.height) if args.height else 540
-    output_width, output_height = 540, 540
+    output_width, output_height = int(args.output) if args.output else 540, int(
+        args.output) if args.output else 540
     pos_x, pos_y, pos_z = width//2, height//2, 100
     target_x, target_y, target_z = width//2, height//2, 100
     padding = 25
@@ -96,7 +102,7 @@ if __name__ == '__main__':
             output_frame = frame.copy()
 
             # Get Bounding Boxes
-            bounding_boxes = detect_face(frame, detector)
+            bounding_boxes, average_confidence = detect_face(frame, detector)
 
             # Draw Bounding Boxes
             draw_bounding_boxes(frame, bounding_boxes, width, height)
@@ -134,7 +140,18 @@ if __name__ == '__main__':
             output_frame = cv2.resize(
                 output_frame, (output_width, output_height))
 
-            cv2.imshow('Debug Screen', cv2.flip(frame, 1))
+            # Draw Metrics
+            frame = cv2.flip(frame, 1)
+            cv2.putText(frame, 'Detected Faces: {}'.format(
+                len(bounding_boxes)), (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+            cv2.putText(frame, 'Average Confidence: {:.2f}'.format(
+                average_confidence), (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+            cv2.putText(frame, 'Max Size: {:.2f}'.format(
+                max_size(bounding_boxes, width, height)), (10, 90), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+            cv2.putText(frame, 'Target: ({:.2f}, {:.2f}, {:.2f})'.format(
+                target_x, target_y, target_z), (10, 120), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+
+            cv2.imshow('Debug Screen', frame)
             cv2.imshow('Output', cv2.flip(output_frame, 1))
             if cv2.waitKey(5) & 0xFF == 27:
                 cap.release()
