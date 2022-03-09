@@ -14,7 +14,6 @@
    ```
 3. Install required Python packages
    ```bash
-   pip3 install Pillow
    pip3 install -r requirements.txt
    ```
 
